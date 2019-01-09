@@ -7,7 +7,7 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/shea_util.ncl"
 
 ;______ From Mark Decker's code _____
 setvalues NhlGetWorkspaceObjectId()
-  "wsMaximumSize" : 1000000000 ;1000000000
+  "wsMaximumSize" : 10000000000 ;1000000000
 end setvalues
 ;____________________________________
 
@@ -23,9 +23,7 @@ var_name1= (/\
              "T_SAND","S_SAND","T_CLAY","S_CLAY","T_SILT","S_SILT","T_OC","S_OC"\
            /)
 
-var_name2= (/\
-             "sand","sand2","clay","clay2","silt","silt2","organic","organic2"\
-            /)
+var_name2= (/"bch","sucs","ssat","sfc","swilt"/)
 
 ; __________________________ PLOT SETTING ____________________________
 res                    = True
@@ -78,76 +76,69 @@ plots = new(3,graphic)
 pic = "reproduce_gridinfo"
 wks = gsn_open_wks("pdf",pic)
 gsn_define_colormap(wks,"WhiteBlueGreenYellowRed")
-
-f = addfile("gridinfo_mmy.nc","r")
-
-bch   = f->bch
-sfc   = f->sfc
-ssat  = f->ssat
-sucs  = f->sucs
-swilt = f->swilt
-
-; __________________________ PLOTTING ____________________________
 res@gsnDraw       = False  ; Don't draw plots;
 res@gsnFrame      = False
 res@lbLabelBarOn  = True
 pres@lbLabelBarOn = False
 
-  f2 = addfile(file_name(1),"r")
-  f3 = addfile(file_name(2),"r")
+f  = addfile("gridinfo_mmy.nc","r")
+f2 = addfile(file_name(2),"r")
+f3 = addfile(file_name(1),"r")
 
+do var_num = 0,4
+
+var1   = f->$var_name2(var_num)$
+var2   = f2->$var_name2(var_num)$
+
+if var_num .eq. 0 then
+  var3   = lonFlip(f3->$var_name2(var_num)$)
+else
+  var3   = f3->$var_name2(var_num)$
+end if
+
+if var_num .eq. 0 then
   res@cnLevels = fspan(0.,18.,19)
-  pres@txString = "bch"
-  ;res@tiMainString = "GSWP3_gwmodel_parameters_site"
-  plots(0) = gsn_csm_contour(wks,bch({:-60.:-1},:),res)
-  plots(1) = gsn_csm_contour(wks,f3->bch({::-1},:),res)
-  plots(2) = gsn_csm_contour(wks,f2->bch({:-60.:-1},:),res); - bch)
-  gsn_panel(wks,(/plots/),(/1,3/),pres)
-  delete(res@cnLevels)
-  print("finishing plotting bch")
-
+else if var_num .eq. 1 then
   res@cnLevels = fspan(-1.,0,11)
-  pres@txString = "sucs"
-  plots(0) = gsn_csm_contour(wks,sucs({:-60.:-1},:),res)
-  plots(1) = gsn_csm_contour(wks,f3->sucs({::-1},:),res)
-  plots(2) = gsn_csm_contour(wks,f2->sucs({:-60.:-1},:),res); - bch)
-  gsn_panel(wks,(/plots/),(/1,3/),pres)
-  delete(res@cnLevels)
-  print("finishing plotting sucs")
-
+else if var_num .eq. 2 then
   res@cnLevels = fspan(0.,0.5,21)
-  pres@txString = "ssat"
-  plots(0) = gsn_csm_contour(wks,ssat({:-60.:-1},:),res)
-  plots(1) = gsn_csm_contour(wks,f3->ssat({::-1},:),res)
-  plots(2) = gsn_csm_contour(wks,f2->ssat({:-60.:-1},:),res); - bch)
-  gsn_panel(wks,(/plots/),(/1,3/),pres)
-  delete(res@cnLevels)
-  print("finishing plotting ssat")
-
+else if var_num .eq. 3 then
   res@cnLevels = fspan(0.,0.5,21)
-  pres@txString = "swilt"
-  plots(0) = gsn_csm_contour(wks,swilt({:-60.:-1},:),res)
-  plots(1) = gsn_csm_contour(wks,f3->swilt({::-1},:),res)
-  plots(2) = gsn_csm_contour(wks,f2->swilt({:-60.:-1},:),res); - bch)
-  gsn_panel(wks,(/plots/),(/1,3/),pres)
-  delete(res@cnLevels)
-  print("finishing plotting swilt")
-
+else if var_num .eq. 4 then
   res@cnLevels = fspan(0.,0.5,21)
-  pres@txString = "sfc"
-  plots(0) = gsn_csm_contour(wks,sfc({:-60.:-1},:),res)
-  plots(1) = gsn_csm_contour(wks,f3->sfc({::-1},:),res)
-  plots(2) = gsn_csm_contour(wks,f2->sfc({:-60.:-1},:),res); - bch)
-  gsn_panel(wks,(/plots/),(/1,3/),pres)
-  delete(res@cnLevels)
-  print("finishing plotting sfc")
+end if
+end if
+end if
+end if
+end if
 
-  res@cnLevels = fspan(0.,0.22,12)
-  pres@txString = "sfc-swilt"
-  plots(0) = gsn_csm_contour(wks,sfc({:-60.:-1},:) - swilt({:-60.:-1},:),res)
-  plots(1) = gsn_csm_contour(wks,f3->sfc({::-1},:)-f3->swilt({::-1},:),res)
-  plots(2) = gsn_csm_contour(wks,f2->sfc({:-60.:-1},:)-f2->swilt({:-60.:-1},:),res); - bch)
-  gsn_panel(wks,(/plots/),(/1,3/),pres)
-  print("finishing plotting sfc-swilt")
+pres@txString = var_name2(var_num)
+plots(0) = gsn_csm_contour(wks,var1({:-60.:-1},:)*1.0,res)
+plots(1) = gsn_csm_contour(wks,var2(::-1,:)*1.0,res)
+plots(2) = gsn_csm_contour(wks,var3({:-60.:-1},:)*1.0,res)
+gsn_panel(wks,(/plots/),(/1,3/),pres)
+print("finishing plot "+var_name2(var_num))
+
+delete(res@cnLevels)
+delete(var1)
+delete(var2)
+delete(var3)
+
+end do
+
+var1   = f->sfc
+var1   = var1 - f->swilt
+var2   = f2->sfc
+var2   = var2 - f2->swilt
+var3   = f3->sfc
+var3   = var3 - f3->swilt
+
+res@cnLevels = fspan(0.,0.22,12)
+pres@txString = "sfc-swilt"
+plots(0) = gsn_csm_contour(wks,var1({:-60.:-1},:)*1.0,res)
+plots(1) = gsn_csm_contour(wks,var2(::-1,:)*1.0,res)
+plots(2) = gsn_csm_contour(wks,var3({:-60.:-1},:)*1.0,res)
+gsn_panel(wks,(/plots/),(/1,3/),pres)
+print("finishing plotting sfc-swilt")
 
 end

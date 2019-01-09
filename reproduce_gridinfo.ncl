@@ -113,6 +113,14 @@ fout->latitude  = fcp->latitude
 fout->time      = fcp->time
 delete(fcp)
 
+; __________________________ Check Value____________________________
+pic = "check_value"
+wks = gsn_open_wks("pdf",pic)
+gsn_define_colormap(wks,"WhiteBlueGreenYellowRed")
+res                    = True
+res@cnFillMode         = "RasterFill"            ; Raster Mode
+res@cnFillOn           = True
+
 ; __________________________ Data input ____________________________
 sand = new((/360,720/),float)
 clay = new((/360,720/),float)
@@ -133,6 +141,9 @@ f1 = addfile(file_name(0)+"/"+var_name1(var_num)+".nc4","r")
 
 var1 = dble2flt(f1->$var_name1(var_num)$(::-1,:))*1.0
 var1@_FillValue = dble2flt(f1->$var_name1(var_num)$@_FillValue) ;7
+
+plot = gsn_csm_contour(wks,var1,res)
+
 var1!0 = "lat"
 var1!1 = "lon"
 lat = dble2flt(f1->lat(::-1))
@@ -143,9 +154,10 @@ var1&lon = lon
 printVarSummary(var1)
 
 var3 = linint2_Wrap(lon,lat,var1,True,Lon,Lat,0)
-printVarSummary(var3)
+print(var3)
 ;var3@_FillValue = var1@_FillValue
-delete(var1)
+plot = gsn_csm_contour(wks,var1,res)
+delete(var1(243,324))
 
 sand@_FillValue = var3@_FillValue
 clay@_FillValue = var3@_FillValue
@@ -168,6 +180,9 @@ end do
 sand = sand/2./100.
 clay = clay/2./100.
 silt = silt/2./100.
+plot = gsn_csm_contour(wks,sand,res)
+plot = gsn_csm_contour(wks,clay,res)
+plot = gsn_csm_contour(wks,silt,res)
 
 printVarSummary(sand)
 printVarSummary(clay)
@@ -181,6 +196,7 @@ sucs  = new((/360,720/),float)
 ssat  = new((/360,720/),float)
 swilt = new((/360,720/),float)
 sfc   = new((/360,720/),float)
+print("finishing allocation")
 
 bch@_FillValue   = -9999.
 sucs@_FillValue  = -9999.
@@ -188,30 +204,32 @@ ssat@_FillValue  = -9999.
 swilt@_FillValue = -9999.
 sfc@_FillValue   = -9999.
 
+print("finishing setting missing value")
+
 bch!0 = "lat"
 bch!1 = "lon"
-bch&lat = f2->latitude({::-1})
-bch&lon = f2->longitude
+bch&lat = Lat({::-1})
+bch&lon = Lon
 
 sucs!0 = "lat"
 sucs!1 = "lon"
-sucs&lat = f2->latitude({::-1})
-sucs&lon = f2->longitude
+sucs&lat = Lat({::-1})
+sucs&lon = Lon
 
 ssat!0 = "lat"
 ssat!1 = "lon"
-ssat&lat = f2->latitude({::-1})
-ssat&lon = f2->longitude
+ssat&lat = Lat({::-1})
+ssat&lon = Lon
 
 swilt!0 = "lat"
 swilt!1 = "lon"
-swilt&lat = f2->latitude({::-1})
-swilt&lon = f2->longitude
+swilt&lat = Lat({::-1})
+swilt&lon = Lon
 
 sfc!0 = "lat"
 sfc!1 = "lon"
-sfc&lat = f2->latitude({::-1})
-sfc&lon = f2->longitude
+sfc&lat = Lat({::-1})
+sfc&lon = Lon
 
 print("finishing adding coordinate")
 
@@ -223,12 +241,13 @@ CM_2_M             = 0.01
 ; Clapp Hornberger exponent [-]
 bch = 3.1 + 15.7 * clay - 0.3 * sand
 printVarSummary(bch)
+plot = gsn_csm_contour(wks,bch,res)
 
 ; psi_sat : soil matric potential at saturation, taking inverse of log (base10); units = m
 ; sucs    : suction at saturation
 sucs = CM_2_M * (10.0^(1.54 - 0.95 * sand + 0.63 * silt))*(-1.0)
 printVarSummary(sucs)
-
+plot = gsn_csm_contour(wks,sucs,res)
 
 ; METER_OF_HEAD_TO_MPA = 9.81 * 0.001
 ; Height (m) x gravity (m/s2) = pressure (kPa)
@@ -238,19 +257,21 @@ printVarSummary(sucs)
 ; ssat : vol H2O @ saturation
 ssat = 0.505 - 0.037 * clay - 0.142 * sand
 printVarSummary(ssat)
-
+plot = gsn_csm_contour(wks,ssat,res)
 
 ; swilt: vol H2O @ wilting
 ; theta_wp: volumetric soil moisture concentrations at the wilting point
 ;          assumed to equal suction of -1.5 MPa or a depth of water of 152.9 m
 swilt = ssat * (sucs / pressure_head_wilt)^(1.0 / bch)
 printVarSummary(swilt)
+plot = gsn_csm_contour(wks,swilt,res)
 
 ; sfc : vol H2O @ field capacity
 ; theta_fc: volumetric soil moisture concentrations at field capacity assumed to
 ;           equal a suction of -0.0033 MPa or a depth of water of 3.364 m
 sfc = ssat * (sucs / pressure_head_crit)^(1.0 / bch)
 printVarSummary(sfc)
+plot = gsn_csm_contour(wks,sfc,res)
 
 delete(sand)
 delete(clay)

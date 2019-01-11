@@ -166,7 +166,7 @@ setfileoption(fout,"DefineMode",False)
 ; been predefined. The "(/", "/)" syntax tells NCL to only output the
 ; data values to the predefined locations on the file.
 
-do var_num = 0,18
+do var_num = 0,21
    fout->$cp_gridinfo(var_num)$ = fcp->$cp_gridinfo(var_num)$
 end do
 
@@ -197,11 +197,7 @@ do var_num = 0,7
 var1 = new((/3600,7200/),float)
 
 f1 = addfile(file_name(0)+"/"+var_name1(var_num)+".nc4","r")
-if var_num .le. 5 then
 var1 = dble2flt(f1->$var_name1(var_num)$)*1.0/100.;
-else 
-var1 = dble2flt(f1->$var_name1(var_num)$)*1.0 ;
-end if
 var1@_FillValue = dble2flt(f1->$var_name1(var_num)$@_FillValue) ;7
 
 plot = gsn_csm_contour(wks,var1,res)
@@ -236,8 +232,9 @@ if var_num .le. 1 then
    sand = sand + var3
 else if var_num .le. 3 then
    clay = clay + var3
-else
+else if var_num .le. 5 then
    silt = silt + var3
+end if
 end if
 end if
 

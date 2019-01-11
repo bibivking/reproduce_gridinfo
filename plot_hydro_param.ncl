@@ -29,8 +29,8 @@ var_name2= (/"bch","sucs","ssat","sfc","swilt","hyds","css",\
              "Albedo",\ ;standard 3D Mark 2D
              "SnowDepth","LAI","patchfrac",\ ; 3D
              "SoilMoist","SoilTemp",\ ;4D
-             "landsea","soil_color",\ ;NOT in f2
-             "sand","sand2","clay","clay2","silt","silt2","organic","organic2"\ 
+             "landsea","soil_color","organic","organic2",\ ;NOT in f2
+             "sand","sand2","clay","clay2","silt","silt2"\
             /)
 
 ; __________________________ PLOT SETTING ____________________________
@@ -339,7 +339,7 @@ else if var_num .eq. 17 then
 res@cnLevels = fspan(190.,300.,25)
 pres@cnLevels = fspan(190.,300.,25)
 end if
-end if 
+end if
 var1   = dim_avg_n_Wrap(dim_avg_n_Wrap(f->$var_name2(var_num)$,0),0)
 var2   = dim_avg_n_Wrap(dim_avg_n_Wrap(f2->$var_name2(var_num)$,0),0)
 var3   = dim_avg_n_Wrap(dim_avg_n_Wrap(f3->$var_name2(var_num)$,0),0)
@@ -381,24 +381,127 @@ delete(res@cnLevels)
 delete(pres@cnLevels)
 end do
 
-do var_num = 18,27
-print(var_name2(var_num))
 
-
-if var_num .eq. 18 then
-res@cnLevels = fspan(0.,1.,11)
-pres@cnLevels = fspan(0.,1.,11)
-else if var_num .eq. 19 then
-res@cnLevels = fspan(1.,18.,19)
-pres@cnLevels = fspan(1.,18.,19)
-else
+; _______________________ soil texture _________________________
 res@cnLevels = fspan(0.,1.,21)
 pres@cnLevels = fspan(0.,1.,21)
-end if 
+
+sand1   = (f->sand+f->sand2)/2.
+sand2   = f2->sand
+sand3   = (f3->sand+f3->sand2)/2.
+
+sand1!0 = "lat"
+sand1!1 = "lon"
+sand1&lat = f->latitude
+sand1&lon = f->longitude
+
+sand2!0 = "lat"
+sand2!1 = "lon"
+sand2&lat = f2->latitude
+sand2&lon = f2->longitude
+
+sand3!0 = "lat"
+sand3!1 = "lon"
+sand3&lat = f3->latitude
+sand3&lon = f3->longitude
+
+pres@txString = var_name2(22)
+res@tiMainString = "(a) reproduce"
+plots(0) = gsn_csm_contour(wks,sand1({:-60.:-1},:)*1.0,res)
+res@tiMainString = "(b) standard"
+plots(1) = gsn_csm_contour(wks,sand2(::-1,:)*1.0,res)
+res@tiMainString = "(c) mrd"
+plots(2) = gsn_csm_contour(wks,sand3({:-60.:-1},:)*1.0,res)
+gsn_panel(wks,(/plots/),(/1,3/),pres)
+print("finishing plot "+var_name2(22))
+delete(sand1)
+delete(sand2)
+delete(sand3)
+
+
+clay1   = (f->clay+f->clay2)/2.
+clay2   = f2->clay
+clay3   = (f3->clay+f3->clay2)/2.
+
+clay1!0 = "lat"
+clay1!1 = "lon"
+clay1&lat = f->latitude
+clay1&lon = f->longitude
+
+clay2!0 = "lat"
+clay2!1 = "lon"
+clay2&lat = f2->latitude
+clay2&lon = f2->longitude
+
+clay3!0 = "lat"
+clay3!1 = "lon"
+clay3&lat = f3->latitude
+clay3&lon = f3->longitude
+
+pres@txString = var_name2(24)
+res@tiMainString = "(a) reproduce"
+plots(0) = gsn_csm_contour(wks,clay1({:-60.:-1},:)*1.0,res)
+res@tiMainString = "(b) standard"
+plots(1) = gsn_csm_contour(wks,clay2(::-1,:)*1.0,res)
+res@tiMainString = "(c) mrd"
+plots(2) = gsn_csm_contour(wks,clay3({:-60.:-1},:)*1.0,res)
+gsn_panel(wks,(/plots/),(/1,3/),pres)
+print("finishing plot "+var_name2(24))
+delete(clay1)
+delete(clay2)
+delete(clay3)
+
+silt1   = (f->silt+f->silt2)/2.
+silt2   = f2->silt
+silt3   = (f3->silt+f3->silt2)/2.
+
+silt1!0 = "lat"
+silt1!1 = "lon"
+silt1&lat = f->latitude
+silt1&lon = f->longitude
+
+silt2!0 = "lat"
+silt2!1 = "lon"
+silt2&lat = f2->latitude
+silt2&lon = f2->longitude
+
+silt3!0 = "lat"
+silt3!1 = "lon"
+silt3&lat = f3->latitude
+silt3&lon = f3->longitude
+
+pres@txString = var_name2(26)
+res@tiMainString = "(a) reproduce"
+plots(0) = gsn_csm_contour(wks,silt1({:-60.:-1},:)*1.0,res)
+res@tiMainString = "(b) standard"
+plots(1) = gsn_csm_contour(wks,silt2(::-1,:)*1.0,res)
+res@tiMainString = "(c) mrd"
+plots(2) = gsn_csm_contour(wks,silt3({:-60.:-1},:)*1.0,res)
+gsn_panel(wks,(/plots/),(/1,3/),pres)
+print("finishing plot "+var_name2(26))
+
+delete(silt1)
+delete(silt2)
+delete(silt3)
+
+delete(res@cnLevels)
+delete(pres@cnLevels)
+
+do var_num = 18,21
+print(var_name2(var_num))
+
+if var_num .eq. 18 then
+  res@cnLevels = fspan(0.,1.,11)
+  pres@cnLevels = fspan(0.,1.,11)
+else if var_num .eq. 19 then
+  res@cnLevels = fspan(1.,18.,19)
+  pres@cnLevels = fspan(1.,18.,19)
+else if var_num .le. 21 then
+  res@cnLevels = fspan(0.,0.5,21)
+  pres@cnLevels = fspan(0.,0.5,21)
 end if
-
-
-
+end if
+end if
 var1   = f->$var_name2(var_num)$
 var3   = f3->$var_name2(var_num)$
 

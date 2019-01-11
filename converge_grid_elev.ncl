@@ -177,13 +177,13 @@ end do
 ;fout->SoilTemp  = fcp->SoilTemp(:,:,::-1,:)*1.0
 
 do var_num = 0,11
-   print("Copy gridinfo "+cp_elev(var_num))
+   print("Copy elve "+cp_elev(var_num))
    if var_num .eq. 0 then
       fout->$cp_elev(var_num)$ = fcp2->$cp_elev(var_num)$
    else if var_num .eq. 11 then
-      fout->$cp_elev(var_num)$ = fcp2->$cp_elev(var_num)$(:,::-1,:)
+      fout->$cp_elev(var_num)$ = lonFlip(fcp2->$cp_elev(var_num)$(:,::-1,:))
    else
-      fout->$cp_elev(var_num)$ = fcp2->$cp_elev(var_num)$(::-1,:)
+      fout->$cp_elev(var_num)$ = lonFlip(fcp2->$cp_elev(var_num)$(::-1,:))
    end if
    end if
 end do
@@ -430,18 +430,22 @@ fout->css_vec(layer,:,:)    = css*1.0
 fout->rhosoil_vec(layer,:,:)= fout->rhosoil_vec*1.0
 fout->cnsd_vec(layer,:,:)   = fout->cnsd_vec*1.0
 end do
+print("finishing hyds_vec - cnsd_vec output")
+
 do layer = 0,2
 fout->sand_vec(layer,:,:)   = fout->sand*1.0
-fout->clay_vec(layer,:,:)    = fout->clay*1.0
-fout->silt_vec(layer,:,:)    = fout->silt*1.0
-fout->org_vec(layer,:,:)   = fout->organic*1.0
+fout->clay_vec(layer,:,:)   = fout->clay*1.0
+fout->silt_vec(layer,:,:)   = fout->silt*1.0
+fout->org_vec(layer,:,:)    = fout->organic*1.0
 end do
 do layer = 3,5
 fout->sand_vec(layer,:,:)   = fout->sand2*1.0
-fout->clay_vec(layer,:,:)    = fout->clay2*1.0
-fout->silt_vec(layer,:,:)    = fout->silt2*1.0
-fout->org_vec(layer,:,:)   = fout->organic2*1.0
+fout->clay_vec(layer,:,:)   = fout->clay2*1.0
+fout->silt_vec(layer,:,:)   = fout->silt2*1.0
+fout->org_vec(layer,:,:)    = fout->organic2*1.0
 end do
+
+print("finishing soil texture output")
 
 print("finishing elev output")
 

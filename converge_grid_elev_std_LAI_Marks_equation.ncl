@@ -299,16 +299,6 @@ clay    = clay/2.
 silt    = silt/2.
 organic = organic/2.
 
-printVarSummary(sand)
-printVarSummary(clay)
-printVarSummary(silt)
-printVarSummary(organic)
-
-plot = gsn_csm_contour(wks,fout->sand,res)
-plot = gsn_csm_contour(wks,fout->clay,res)
-plot = gsn_csm_contour(wks,fout->silt,res)
-plot = gsn_csm_contour(wks,fout->organic,res)
-
 do layer = 0,2
 fout->sand_vec(layer,:,:)   = fout->sand*1.0
 fout->clay_vec(layer,:,:)   = fout->clay*1.0
@@ -539,14 +529,19 @@ fout->hyds   = hyds*1.0
 plot = gsn_csm_contour(wks,fout->hyds,res)
 fout->bch    = bch*1.0
 plot = gsn_csm_contour(wks,fout->bch,res)
-fout->sfc    = sfc*1.0
-plot = gsn_csm_contour(wks,fout->sfc,res)
 fout->ssat   = ssat*1.0
 plot = gsn_csm_contour(wks,fout->ssat,res)
-fout->sucs   = sucs*1.0
+if eq_opt .eq. 0 then
+  fout->sucs   = sucs*1.0
+else if eq_opt .eq. 1 then
+  fout->sucs   = sucs*(-1.0)/1000.
+end if
+end if
 plot = gsn_csm_contour(wks,fout->sucs,res)
 fout->swilt  = swilt*1.0
 plot = gsn_csm_contour(wks,fout->swilt,res)
+fout->sfc    = sfc*1.0
+plot = gsn_csm_contour(wks,fout->sfc,res)
 fout->css    = css*1.0
 plot = gsn_csm_contour(wks,fout->css,res)
 
@@ -559,30 +554,34 @@ end if
 print("finishing gridinfo output")
 
 do layer = 0,5
-  fout->hyds_vec(layer,:,:)   = hyds*1.0
-  plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->hyds_vec,0),res)
-  fout->bch_vec(layer,:,:)    = bch*1.0
-  plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->bch_vec,0),res)
-  fout->sfc_vec(layer,:,:)    = sfc*1.0
-  plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->sfc_vec,0),res)
-  fout->ssat_vec(layer,:,:)   = ssat*1.0
-  plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->ssat_vec,0),res)
-  fout->sucs_vec(layer,:,:)   = sucs*1.0
-  plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->sucs_vec,0),res)
-  fout->swilt_vec(layer,:,:)  = swilt*1.0
-  plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->swilt_vec,0),res)
-  fout->css_vec(layer,:,:)    = css*1.0
-  plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->css_vec,0),res)
+  fout->hyds_vec(layer,:,:)   = fout->hyds*1.0
+  fout->bch_vec(layer,:,:)    = fout->bch*1.0
+  fout->sfc_vec(layer,:,:)    = fout->sfc*1.0
+  fout->ssat_vec(layer,:,:)   = fout->ssat*1.0
+  fout->sucs_vec(layer,:,:)   = fout->sucs*1.0
+  fout->swilt_vec(layer,:,:)  = fout->swilt*1.0
+  fout->css_vec(layer,:,:)    = fout->css*1.0
   fout->rhosoil_vec(layer,:,:)= fout->rhosoil*1.0
-  plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->rhosoil_vec,0),res)
+  
 if eq_opt .eq. 1 then
-  fout->cnsd_vec(layer,:,:)   = cnsd*1.0
-  plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->cnsd_vec,0),res)
+  fout->cnsd_vec(layer,:,:)   = fout->cnsd*1.0
   fout->watr(layer,:,:)       = watr*1.0
-  plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->watr,0),res)
 end if
 
 end do
+
+
+plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->hyds_vec,0),res)
+plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->bch_vec,0),res)
+plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->sfc_vec,0),res)
+plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->ssat_vec,0),res)
+plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->sucs_vec,0),res)
+plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->swilt_vec,0),res)
+plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->css_vec,0),res)
+plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->rhosoil_vec,0),res)
+plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->cnsd_vec,0),res)
+plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->watr,0),res)
+
 print("finishing param_vec output")
 
 end

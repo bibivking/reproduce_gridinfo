@@ -93,6 +93,8 @@ f  = addfile("gridinfo_mmy.nc","r")
 f2 = addfile(file_name(2),"r")
 f3 = addfile(file_name(1),"r")
 
+
+; ______________________ sfc - swilt _____________________
 var1   = f->sfc
 var1   = var1 - f->swilt
 var2   = f2->sfc
@@ -132,6 +134,7 @@ delete(var1)
 delete(var2)
 delete(var3)
 
+; ___________________________________________________________ 
 do var_num = 0,11
 print(var_name2(var_num))
 var1   = f->$var_name2(var_num)$
@@ -147,7 +150,6 @@ var1!0 = "lat"
 var1!1 = "lon"
 var1&lat = f->latitude
 var1&lon = f->longitude
-
 
 var2!0 = "lat"
 var2!1 = "lon"

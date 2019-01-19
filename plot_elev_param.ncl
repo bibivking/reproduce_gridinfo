@@ -19,7 +19,7 @@ file_name = (/\
          "/srv/ccrc/data45/z3509830/CABLE_runs/CABLE_site_runs/CABLE_AUX-dev/offline/gridinfo_CSIRO_1x1.nc"\
            /)
 
-            
+
 var_name2= (/\
               "drainage_density","drainage_dist",\
               "slope","slope_std",\
@@ -82,7 +82,7 @@ pres@lbTitlePosition      = "Bottom";Right"
 
 plots = new(3,graphic)
 
-pic = "converge_elve"
+pic = "converge_elev"
 wks = gsn_open_wks("pdf",pic)
 gsn_define_colormap(wks,"WhiteBlueGreenYellowRed")
 res@gsnDraw       = False  ; Don't draw plots;
@@ -119,7 +119,7 @@ var3!1 = "lon"
 var3&lat = f3->latitude
 var3&lon = f3->longitude
 
-res@cnLevels = fspan(0.,0.22,12)
+res@cnLevels  = fspan(0.,0.22,12)
 pres@cnLevels = fspan(0.,0.22,12)
 pres@txString = "sfc-swilt"
 res@tiMainString = "(a) reproduce"
@@ -144,10 +144,10 @@ print(var_num + " "+ var_name2(var_num))
 
 if var_num .le. 9 then
 var1   = f->$var_name2(var_num)$
-var3   = f3->$var_name2(var_num)$
+var3   = lonFlip(f3->$var_name2(var_num)$)
 else if var_num .gt. 9 then
 var1   = dim_avg_n_Wrap(f->$var_name2(var_num)$,0)
-var3   = dim_avg_n_Wrap(f3->$var_name2(var_num)$,0)
+var3   = lonFlip(dim_avg_n_Wrap(f3->$var_name2(var_num)$,0))
 end if
 end if
 
@@ -161,54 +161,50 @@ var3!1 = "lon"
 var3&lat = f3->latitude
 var3&lon = f3->longitude
 
-;if var_num .eq. 0 then
-;  res@cnLevels = fspan(0.,18.,19)
-;  pres@cnLevels = fspan(0.,18.,19)
-;else if var_num .eq. 1 then
-;  res@cnLevels = fspan(-1.,0,11)
-;  pres@cnLevels = fspan(-1.,0,11)
-;else if var_num .eq. 2 then
-;  res@cnLevels = fspan(0.2,0.7,21)
-;  pres@cnLevels = fspan(0.2,0.7,21)
-;else if var_num .eq. 3 then
-;  res@cnLevels = fspan(0.,0.5,21)
-;  pres@cnLevels = fspan(0.,0.5,21)
-;else if var_num .eq. 4 then
-;  res@cnLevels = fspan(0.,0.5,21)
-;  pres@cnLevels = fspan(0.,0.5,21)
-;else if var_num .eq. 5 then
-;  res@cnLevels = fspan(0.,0.03,31)
-;  pres@cnLevels = fspan(0.,0.03,31)
-;else if var_num .eq. 6 then
-;  res@cnLevels = fspan(800.,2000.,25)
-;  pres@cnLevels = fspan(800.,2000.,25)
-;else if var_num .eq. 7 then
-;  res@cnLevels = fspan(1.,16.,16)
-;  pres@cnLevels = fspan(1.,16.,16)
-;else if var_num .eq. 8 then
-;  res@cnLevels = fspan(1.,8.,8)
-;  pres@cnLevels = fspan(1.,8.,8)
-;else if var_num .eq. 9 then
-;  res@cnLevels = fspan(0.,0.35,15)
-;  pres@cnLevels = fspan(0.,0.35,15)
-;else if var_num .eq. 10 then
-;  res@cnLevels = fspan(800.,1700.,19)
-;  pres@cnLevels = fspan(800.,1700.,19)
-;else if var_num .le. 11 then
-;  res@cnLevels = fspan(0.,1.,21)
-;  pres@cnLevels = fspan(0.,1.,21)
-;end if
-;end if
-;end if
-;end if
-;end if
-;end if
-;end if
-;end if
-;end if
-;end if
-;end if
-;end if
+if var_num .eq. 10 then ;bch
+  res@cnLevels = fspan(1.,16.,16)
+  pres@cnLevels = fspan(1.,16.,16)
+else if var_num .eq. 11 then ;sucs
+  res@cnLevels = fspan(-1.,0,11)
+  pres@cnLevels = fspan(-1.,0,11)
+else if var_num .eq. 12 then ;ssat
+  res@cnLevels = fspan(0.0,0.6,31)
+  pres@cnLevels = fspan(0.0,0.6,31)
+else if var_num .eq. 13 then ;swilt
+  res@cnLevels = fspan(0.,0.4,21)
+  pres@cnLevels = fspan(0.,0.4,21)
+else if var_num .eq. 14 then ;sfc
+  res@cnLevels = fspan(0.,0.4,21)
+  pres@cnLevels = fspan(0.,0.4,21)
+else if var_num .eq. 15 then ;css
+  res@cnLevels = fspan(700.,1000,21)
+  pres@cnLevels = fspan(700.,1000,21)
+else if var_num .eq. 16 then ;hyds
+  res@cnLevels = fspan(0.,0.03,16)
+  pres@cnLevels = fspan(0.,0.03,16)
+else if var_num .eq. 17 then ;rhosoil
+  res@cnLevels = fspan(400.,1600.,13)
+  pres@cnLevels = fspan(400.,1600.,13)
+else if var_num .eq. 18 then ;cnsd
+  res@cnLevels = fspan(0.1,0.3,21)
+  pres@cnLevels = fspan(0.1,0.3,21)
+else if var_num .lt. 22 then ;sand/silt/clay
+  res@cnLevels = fspan(0.,1.,21)
+  pres@cnLevels = fspan(0.,1.,21)
+else if var_num .eq. 22 then
+  res@cnLevels = fspan(0.,0.7,15)
+  pres@cnLevels = fspan(0.,0.7,15)
+end if
+end if
+end if
+end if
+end if
+end if
+end if
+end if
+end if
+end if
+end if
 pres@txString = var_name2(var_num)
 res@tiMainString = "(a) converge"
 plots(0) = gsn_csm_contour(wks,var1({:-60.:-1},:)*1.0,res)
@@ -217,11 +213,11 @@ res@tiMainString = "(b) mrd"
 plots(1) = gsn_csm_contour(wks,var3({-60.:},:)*1.0,res)
 gsn_panel(wks,(/plots(0:1)/),(/1,2/),pres)
 print("finishing plot "+var_name2(var_num))
-;delete(res@cnLevels)
-;delete(pres@cnLevels)
+delete(res@cnLevels)
+delete(pres@cnLevels)
 delete(var1)
 delete(var3)
 
 end do
 
-end 
+end

@@ -440,7 +440,7 @@ delete(clay)
 delete(silt)
 print("finishing calculation")
 
-fout->hyds   = hyds*1.0
+fout->hyds   = hyds/1000.
 fout->bch    = bch*1.0
 fout->sfc    = sfc*1.0
 fout->ssat   = ssat*1.0

@@ -51,7 +51,7 @@ cp_gridinfo = (/\
                 "patchfrac",\ ;"longitude","latitude",
                 "iveg","isoil","soil_color","landsea","rhosoil",\ ;"cnsd",
                 "Albedo","albedo2",\ ; "LAI",
-                "SnowDepth","SoilMoist","SoilTemp"\
+                "SoilMoist"\;"SnowDepth",,"SoilTemp"
                 /)
 
 elev_nml = (/\
@@ -76,7 +76,7 @@ cp_elev = (/\
 
 ;___________________________ Equation Option ____________________________
 
-eq_opt = 1
+eq_opt = 0
 
 ;  0 : using GADY's eq for "bch,sfc,ssat,sucs,swilt" + CABLE's eq for "hyds,css"
 ;  1 : using Mark's set of eq, which forms his elevfile
@@ -147,7 +147,7 @@ print("Exit DefineMode")
 ; been predefined. The "(/", "/)" syntax tells NCL to only output the
 ; data values to the predefined locations on the file.
 
-do var_num = 0,17
+do var_num = 0,15
    print("Copy gridinfo "+cp_gridinfo(var_num))
    fout->$cp_gridinfo(var_num)$ = fcp->$cp_gridinfo(var_num)$*1
 end do
@@ -189,7 +189,7 @@ res@cnFillMode = "RasterFill"            ; Raster Mode
 res@cnFillOn   = True
 res@cnLinesOn  = False
 
-; _________________________ LAI input _____________________________
+; _______________________ Standard input ____________________________
 f2 = addfile(file_name(1),"r")
 Lat = f2->latitude(::-1)
 Lon = f2->longitude
@@ -198,8 +198,12 @@ f4 = addfile(file_name(3),"r")
 Lat_std = fspan(89.5,-89.5,180)
 Lon_std = f4->longitude
 
-LAI_std = new((/12,180,360/),float)
+LAI_std = new((/12,180,360/),  float)
+SD_std  = new((/12,180,360/),  float)
+ST_std  = new((/12,6,180,360/),float)
 LAI_std@_FillValue = f4->LAI@missing_value
+SD_std@_FillValue  = f4->SnowDepth@missing_value
+ST_std@_FillValue  = f4->SoilTemp@missing_value
 
 LAI_std(:,:149,:) =  f4->LAI*1.0
 LAI_std(:,150:,:) =  LAI_std@_FillValue
@@ -209,16 +213,46 @@ LAI_std!2 = "lon"
 LAI_std&lat = Lat_std
 LAI_std&lon = Lon_std
 
+SD_std(:,:149,:) =  f4->SnowDepth*1.0
+SD_std(:,150:,:) =  SD_std@_FillValue
+SD_std!0 = "depth"
+SD_std!1 = "lat"
+SD_std!2 = "lon"
+SD_std&lat = Lat_std
+SD_std&lon = Lon_std
+
+ST_std(:,:,:149,:) =  f4->SoilTemp*1.0
+ST_std(:,:,150:,:) =  ST_std@_FillValue
+ST_std!0 = "time"
+ST_std!1 = "depth"
+ST_std!2 = "lat"
+ST_std!3 = "lon"
+ST_std&lat = Lat_std
+ST_std&lon = Lon_std
+
 LAI = linint2(Lon_std,Lat_std(::-1),LAI_std(:,::-1,:),True,Lon,Lat,0);_Wrap
 ; Lat & Lon must be strictly monotonically increasing
 fout->LAI = LAI(:,::-1,:)
 
+SnowDepth = linint2(Lon_std,Lat_std(::-1),SD_std(:,::-1,:),True,Lon,Lat,0)
+fout->SnowDepth = SnowDepth(:,::-1,:)
+
+SoilTemp = linint2(Lon_std,Lat_std(::-1),ST_std(:,:,::-1,:),True,Lon,Lat,0)
+fout->SoilTemp  = SoilTemp(:,:,::-1,:)
+
 plot = gsn_csm_contour(wks,fout->LAI(0,:,:)*1.0,res)
+plot = gsn_csm_contour(wks,fout->SnowDepth(0,:,:)*1.0,res)
+plot = gsn_csm_contour(wks,fout->SoilTemp(0,0,:,:)*1.0,res)
+
 
 ;print(fout->LAI(0,:,:))
 delete(f4)
 delete(LAI)
+delete(SnowDepth)
+delete(SoilTemp)
 delete(LAI_std)
+delete(SD_std)
+delete(ST_std)
 delete(Lat_std)
 delete(Lon_std)
 
@@ -525,7 +559,7 @@ else
 end if
 end if
 
-fout->hyds   = hyds*1.0
+fout->hyds   = hyds/1000.
 plot = gsn_csm_contour(wks,fout->hyds,res)
 fout->bch    = bch*1.0
 plot = gsn_csm_contour(wks,fout->bch,res)
@@ -562,7 +596,7 @@ do layer = 0,5
   fout->swilt_vec(layer,:,:)  = fout->swilt*1.0
   fout->css_vec(layer,:,:)    = fout->css*1.0
   fout->rhosoil_vec(layer,:,:)= fout->rhosoil*1.0
-  
+
 if eq_opt .eq. 1 then
   fout->cnsd_vec(layer,:,:)   = fout->cnsd*1.0
   fout->watr(layer,:,:)       = watr*1.0

@@ -10,7 +10,8 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/shea_util.ncl"
 ; 2. add Mark's elevfile equations as an option to calculate soil parameters
 ; 3. clarify script's structure
 ; 4. change hyds unit from mm to m, while hyds_vec still uses mm
-; 5. add standard SnowDepth and SoilTemp to replace Mark's gridinfo one
+; 5. add standard LAI (comment out SnowDepth and SoilTemp, because the standard one might make things worse) 
+;    to replace Mark's gridinfo one
 ; 6. add another interpolation to avoid land area losing due to missing_value expantion
 ; 7. fout->landsea@units = "0:land, 1:sea"
 ;______ From Mark Decker's code ______
@@ -77,7 +78,7 @@ cp_elev = (/\
 
 ;___________________________ Equation Option ____________________________
 
-eq_opt = 0
+eq_opt = 1
 ;  0 : using GADY's eq for "bch,sfc,ssat,sucs,swilt" + CABLE's eq for "hyds,css"
 ;  1 : using Mark's set of eq, which forms his elevfile
 

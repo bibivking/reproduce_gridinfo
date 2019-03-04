@@ -653,7 +653,7 @@ end if
 print("finishing gridinfo output")
 
 do layer = 0,5
-  fout->hyds_vec(layer,:,:)   = fout->hyds*1.0
+  fout->hyds_vec(layer,:,:)   = hyds*1.0
   fout->bch_vec(layer,:,:)    = fout->bch*1.0
   fout->sfc_vec(layer,:,:)    = fout->sfc*1.0
   fout->ssat_vec(layer,:,:)   = fout->ssat*1.0

@@ -1,0 +1,5 @@
+To make a gridinfo file and its landmask file, please follow the steps:
+
+1. run converge_grid_elev_std_opt_mask.ncl to get a grid_elev file which all vars use the same landsea 
+2. run reverse_lat_lon.ncl to make gridinfo file into a GSWP kind global map
+3. run make_landmask_for_mmy_gridinfo.ncl to make landmask file for the gridinfo file

@@ -157,7 +157,12 @@ setfileoption(fout,"DefineMode",True)
 ; create global attributes of the file
 fAtt               = True            ; assign file attributes
 fAtt@title         = "converge gridinfo and elev"
-fAtt@source_file   = "CABLE_UNSW_GSWP3_gridinfo_0.5x0.5_site.nc and GSWP3_gwmodel_parameters.nc"
+if std_opt .eq. 0 then
+  fAtt@source_file   = "CABLE_UNSW_GSWP3_gridinfo_0.5x0.5_site.nc and GSWP3_gwmodel_parameters.nc"
+else if std_opt .eq. 1 then
+  fAtt@source_file   = "CABLE_UNSW_GSWP3_gridinfo_0.5x0.5_site.nc, GSWP3_gwmodel_parameters.nc, and gridinfo_CSIRO_1x1.nc (LAI,isoil)"
+end if
+end if
 fAtt@Conventions   = "None"
 fAtt@creation_date = systemfunc ("date")
 fileattdef( fout, fAtt )            ; copy file attributes
@@ -505,6 +510,12 @@ plot = gsn_csm_contour(wks,fout->silt,res)
 plot = gsn_csm_contour(wks,fout->organic,res)
 
 
+res@tiMainString = "sand+clay+silt"
+plot = gsn_csm_contour(wks,fout->sand+fout->clay+fout->silt,res)
+res@tiMainString = "sand+clay+silt+organic"
+plot = gsn_csm_contour(wks,fout->sand+fout->clay+fout->silt+fout->organic,res)
+delete(res@tiMainString)
+
 do layer = 0,5;2
 fout->sand_vec(layer,:,:)   = fout->sand*1.0
 fout->clay_vec(layer,:,:)   = fout->clay*1.0
@@ -659,7 +670,8 @@ if eq_opt .eq. 0 then
   print("finishing calculation")
 
 else if eq_opt .eq. 1 then
-
+; ________________________________ Mark Decker's equations for elev file ___________________________________
+; From /g/data1/w35/mrd561/CABLE2_runs/CMIP6-GM2-testing/ssgw_Feb23.2018/opt/surface_data/add_derived_SWC.py
   watr  = new((/360,720/),float)
   cnsd  = new((/360,720/),float)
 

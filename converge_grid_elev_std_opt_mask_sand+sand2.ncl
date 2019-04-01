@@ -17,7 +17,10 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/shea_util.ncl"
 ; 8. add using std isoil(/LAI/SnowDepth/SoilTemp, added before) as options
 ; 9. add _FillValue for the variables who don't have one
 ; 10. mask out no-land area of all 2D 3D 4D variable
-; 11. put upper and lower layer's average clay/silt/sand/organic into clay/silt/sand/organic
+; 11. use clay/silt/sand/organic to hold the weighted mean of 0-1m soil layers.
+;     clay2/silt2/sand2/organic2 hold the 0.3-1m soil layer,
+;     and the pixels clay2+silt2+sand2 < 0.9 are replaced by clay/silt/sand.
+;     clay_vec/silt_vec/sand_vec/organic_vec = clay/silt/sand/organic.
 
 ;______ From Mark Decker's code ______
 setvalues NhlGetWorkspaceObjectId()
@@ -427,10 +430,18 @@ sand    = new((/360,720/),float)
 clay    = new((/360,720/),float)
 silt    = new((/360,720/),float)
 organic = new((/360,720/),float)
+sand2    = new((/360,720/),float)
+clay2    = new((/360,720/),float)
+silt2    = new((/360,720/),float)
+organic2 = new((/360,720/),float)
 sand    = 0.
 clay    = 0.
 silt    = 0.
 organic = 0.
+sand2    = 0.
+clay2    = 0.
+silt2    = 0.
+organic2 = 0.
 
 do var_num = 0,7
 
@@ -454,7 +465,7 @@ print("point 1 ")
 var3 = linint2_Wrap(lon,lat,var1,True,Lon,Lat,0)
 delete(var1)
 var3 = var3(::-1,:)
-var3!0 = "lat" ;������It doesn't need here
+var3!0 = "lat" ;It doesn't need here
 var3!1 = "lon"
 var3&lat = Lat
 var3&lon = Lon
@@ -467,48 +478,77 @@ sand@_FillValue    = var3@_FillValue
 clay@_FillValue    = var3@_FillValue
 silt@_FillValue    = var3@_FillValue
 organic@_FillValue = var3@_FillValue
+sand2@_FillValue    = var3@_FillValue
+clay2@_FillValue    = var3@_FillValue
+silt2@_FillValue    = var3@_FillValue
+organic2@_FillValue = var3@_FillValue
 print("point 3 ")
 
-if var_num .le. 1 then
-   sand = sand + var3
+if var_num .eq. 0 then
+   sand = var3
+else if var_num .eq. 1 then
+   sand2 = var3
+else if var_num .eq. 2 then
+   clay = var3
 else if var_num .le. 3 then
-   clay = clay + var3
+   clay2 = var3
+else if var_num .le. 4 then
+   silt = var3
 else if var_num .le. 5 then
-   silt = silt + var3
+   slit2 = var3
+else if var_num .le. 6 then
+   organic = var3
 else if var_num .le. 7 then
-   organic = organic + var3
+   organic2 = var3
 end if
 end if
 end if
 end if
-print("point 4 ")
-
-if mod(var_num,2) .eq. 1 then
-   print(var_name2(var_num))
-   fout->$var_name2(var_num)$ = var3*1.0
-   plot = gsn_csm_contour(wks,fout->$var_name2(var_num)$,res)
 end if
-print("point 5 ")
+end if
+end if
+end if
 delete(var3)
+print("point 4 ")
 end do
 
-print("finishing soil texture input")
+; fill missing pixels
+sand2    = where((sand2+clay2+silt2) .lt. 0.9, sand, sand2)
+clay2    = where((sand2+clay2+silt2) .lt. 0.9, clay, clay2)
+silt2    = where((sand2+clay2+silt2) .lt. 0.9, silt, silt2)
 
-sand    = sand/2.
-clay    = clay/2.
-silt    = silt/2.
-organic = organic/2.
+sand    = sand*0.3+sand2*0.7 ; 0-0.3m is top soil layer, 0.3-1.0m is lower soil layer
+clay    = clay*0.3+clay2*0.7
+silt    = silt*0.3+silt2*0.7
+organic = organic*0.3+organic2*0.7
 
+; sand/clay/silt/organic hold the weighted mean of 0-1m soil layers
 fout->sand = sand*1.0
 fout->clay = clay*1.0
 fout->silt = silt*1.0
 fout->organic = organic*1.0
+; sand2/clay2/silt2/organic2 hold the 0.3-1m soil layer
+fout->sand2 = sand2*1.0
+fout->clay2 = clay2*1.0
+fout->silt2 = silt*1.0
+fout->organic2 = organic2*1.0
+
+delete(sand2)
+delete(clay2)
+delete(silt2)
+delete(organic2)
+
+print("finishing soil texture input")
 
 plot = gsn_csm_contour(wks,fout->sand,res)
 plot = gsn_csm_contour(wks,fout->clay,res)
 plot = gsn_csm_contour(wks,fout->silt,res)
 plot = gsn_csm_contour(wks,fout->organic,res)
 
+plot = gsn_csm_contour(wks,fout->sand2,res)
+plot = gsn_csm_contour(wks,fout->clay2,res)
+plot = gsn_csm_contour(wks,fout->silt2,res)
+plot = gsn_csm_contour(wks,fout->organic2,res)
 
 res@tiMainString = "sand+clay+silt"
 plot = gsn_csm_contour(wks,fout->sand+fout->clay+fout->silt,res)

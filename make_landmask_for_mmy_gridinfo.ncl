@@ -16,11 +16,12 @@ casename = (/\
             "GADY-CABLE_orig",\
             "GADY-CABLE_orig_std",\
             "MD_elev_orig",\
-            "MD_elev_orig_std"\
+            "MD_elev_orig_std",\
+            "MD_elev_orig_std_avg-sand"\
            /)
 
-file_name1 = "/srv/ccrc/data25/z5218916/script/reproduce_gridfile/gridinfo_mmy_"+casename(3)+"_mask.nc"
-file_name2 = "gridinfo_mmy_"+casename(3)+"_landmask.nc"
+file_name1 = "/srv/ccrc/data25/z5218916/script/reproduce_gridfile/gridinfo_mmy_"+casename(4)+"_mask.nc"
+file_name2 = "gridinfo_mmy_"+casename(4)+"_landmask.nc"
 
 ; ______________________________ Forming nc data ____________________________
 fcp = addfile (file_name1,"r")

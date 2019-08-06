@@ -15,7 +15,8 @@ begin
 
 file_name = (/\
          "/srv/ccrc/data03/z3362708/Harmonized_Global_Soil_Data/data",\
-         "/srv/ccrc/data45/z3509830/CABLE_runs/CABLE_site_runs/CABLE_AUX-dev/offline/CABLE_UNSW_GSWP3_gridinfo_0.5x0.5_site.nc",\
+         "/srv/ccrc/data45/z3509830/CABLE_runs/CABLE_site_runs/CABLE_AUX-dev/offline/CABLE_UNSW_GSWP3_gridinfo_0.5x0.5.nc",\
+;         "gridinfo_mmy.nc",\
          "/srv/ccrc/data45/z3509830/CABLE_runs/CABLE_site_runs/CABLE_AUX-dev/offline/gridinfo_CSIRO_1x1.nc"\
            /)
 
@@ -81,7 +82,10 @@ pres@lbTitlePosition      = "Bottom";Right"
 
 plots = new(3,graphic)
 
-pic = "reproduce_gridinfo"
+casename = "MD_elev_orig_std_avg-sand_mask"
+
+;pic = "reproduce_gridinfo-GADY-CABLE_orig"
+pic = "reproduce_gridinfo-"+casename 
 wks = gsn_open_wks("pdf",pic)
 gsn_define_colormap(wks,"WhiteBlueGreenYellowRed")
 res@gsnDraw       = False  ; Don't draw plots;
@@ -89,10 +93,10 @@ res@gsnFrame      = False
 res@lbLabelBarOn  = True;False
 pres@lbLabelBarOn = False;True
 
-f  = addfile("gridinfo_mmy.nc","r")
+f  = addfile("gridinfo_mmy_"+casename+".nc","r")
+;f  = addfile("gridinfo_mmy_GADY-CABLE_orig.nc","r")
 f2 = addfile(file_name(2),"r")
 f3 = addfile(file_name(1),"r")
-
 
 ; ______________________ sfc - swilt _____________________
 var1   = f->sfc
@@ -121,11 +125,11 @@ res@cnLevels = fspan(0.,0.22,12)
 pres@cnLevels = fspan(0.,0.22,12)
 pres@txString = "sfc-swilt"
 res@tiMainString = "(a) reproduce"
-plots(0) = gsn_csm_contour(wks,var1({:-60.:-1},:)*1.0,res)
+plots(0) = gsn_csm_contour(wks,var1({-60.:90},:)*1.0,res)
 res@tiMainString = "(b) standard"
-plots(1) = gsn_csm_contour(wks,var2(::-1,:)*1.0,res)
+plots(1) = gsn_csm_contour(wks,lonFlip(var2(::-1,:))*1.0,res)
 res@tiMainString = "(c) mrd"
-plots(2) = gsn_csm_contour(wks,var3({:-60.:-1},:)*1.0,res)
+plots(2) = gsn_csm_contour(wks,var3({-60:90},:)*1.0,res)
 gsn_panel(wks,(/plots/),(/1,3/),pres)
 print("finishing plotting sfc-swilt")
 delete(res@cnLevels)
@@ -177,8 +181,8 @@ else if var_num .eq. 4 then
   res@cnLevels = fspan(0.,0.5,21)
   pres@cnLevels = fspan(0.,0.5,21)
 else if var_num .eq. 5 then
-  res@cnLevels = fspan(0.,0.03,31)
-  pres@cnLevels = fspan(0.,0.03,31)
+  res@cnLevels = fspan(0.,0.00003,31)
+  pres@cnLevels = fspan(0.,0.00003,31)
 else if var_num .eq. 6 then
   res@cnLevels = fspan(800.,2000.,25)
   pres@cnLevels = fspan(800.,2000.,25)
@@ -186,8 +190,8 @@ else if var_num .eq. 7 then
   res@cnLevels = fspan(1.,16.,16)
   pres@cnLevels = fspan(1.,16.,16)
 else if var_num .eq. 8 then
-  res@cnLevels = fspan(1.,8.,8)
-  pres@cnLevels = fspan(1.,8.,8)
+  res@cnLevels = fspan(1.,9.,9)
+  pres@cnLevels = fspan(1.,9.,9)
 else if var_num .eq. 9 then
   res@cnLevels = fspan(0.,0.35,15)
   pres@cnLevels = fspan(0.,0.35,15)
@@ -211,15 +215,15 @@ end if
 end if
 pres@txString = var_name2(var_num)
 res@tiMainString = "(a) reproduce"
-plots(0) = gsn_csm_contour(wks,var1({:-60.:-1},:)*1.0,res)
+plots(0) = gsn_csm_contour(wks,var1({-60:90},:)*1.0,res)
 res@tiMainString = "(b) standard"
 if var_num .eq. 1 then
-   plots(1) = gsn_csm_contour(wks,abs(var2(::-1,:))*(-1.0),res)
+   plots(1) = gsn_csm_contour(wks,abs(lonFlip(var2(::-1,:)))*(-1.0),res)
 else
-   plots(1) = gsn_csm_contour(wks,var2(::-1,:)*1.0,res)
+   plots(1) = gsn_csm_contour(wks,lonFlip(var2(::-1,:))*1.0,res)
 end if
 res@tiMainString = "(c) mrd"
-plots(2) = gsn_csm_contour(wks,var3({:-60.:-1},:)*1.0,res)
+plots(2) = gsn_csm_contour(wks,var3({-60:90},:)*1.0,res)
 gsn_panel(wks,(/plots/),(/1,3/),pres)
 print("finishing plot "+var_name2(var_num))
 delete(res@cnLevels)
@@ -256,15 +260,15 @@ var3&lon = f3->longitude
 
 pres@txString = var_name2(12)
 res@tiMainString = "(a) reproduce"
-plots(0) = gsn_csm_contour(wks,var1({:-60.:-1},:)*1.0,res)
+plots(0) = gsn_csm_contour(wks,var1({-60.:90},:)*1.0,res)
 res@tiMainString = "(b) standard"
 if var_num .eq. 1 then
-   plots(1) = gsn_csm_contour(wks,abs(var2(::-1,:))*(-1.0),res)
+   plots(1) = gsn_csm_contour(wks,abs(lonFlip(var2(::-1,:)))*(-1.0),res)
 else
-   plots(1) = gsn_csm_contour(wks,var2(::-1,:)*1.0,res)
+   plots(1) = gsn_csm_contour(wks,lonFlip(var2(::-1,:))*1.0,res)
 end if
 res@tiMainString = "(c) mrd"
-plots(2) = gsn_csm_contour(wks,var3({:-60.:-1},:)*1.0,res)
+plots(2) = gsn_csm_contour(wks,var3({-60:90},:)*1.0,res)
 gsn_panel(wks,(/plots/),(/1,3/),pres)
 print("finishing plot "+var_name2(var_num))
 delete(res@cnLevels)
@@ -312,15 +316,15 @@ var3&lon = f3->longitude
 
 pres@txString = var_name2(var_num)
 res@tiMainString = "(a) reproduce"
-plots(0) = gsn_csm_contour(wks,var1({:-60.:-1},:)*1.0,res)
+plots(0) = gsn_csm_contour(wks,var1({-60.:90},:)*1.0,res)
 res@tiMainString = "(b) standard"
 if var_num .eq. 1 then
-   plots(1) = gsn_csm_contour(wks,abs(var2(::-1,:))*(-1.0),res)
+   plots(1) = gsn_csm_contour(wks,abs(lonFlip(var2(::-1,:)))*(-1.0),res)
 else
-   plots(1) = gsn_csm_contour(wks,var2(::-1,:)*1.0,res)
+   plots(1) = gsn_csm_contour(wks,lonFlip(var2(::-1,:))*1.0,res)
 end if
 res@tiMainString = "(c) mrd"
-plots(2) = gsn_csm_contour(wks,var3({:-60.:-1},:)*1.0,res)
+plots(2) = gsn_csm_contour(wks,var3({-60:90},:)*1.0,res)
 gsn_panel(wks,(/plots/),(/1,3/),pres)
 print("finishing plot "+var_name2(var_num))
 
@@ -364,15 +368,15 @@ var3&lon = f3->longitude
 
 pres@txString = var_name2(var_num)
 res@tiMainString = "(a) reproduce"
-plots(0) = gsn_csm_contour(wks,var1({:-60.:-1},:)*1.0,res)
+plots(0) = gsn_csm_contour(wks,var1({-60.:90},:)*1.0,res)
 res@tiMainString = "(b) standard"
 if var_num .eq. 1 then
-   plots(1) = gsn_csm_contour(wks,abs(var2(::-1,:))*(-1.0),res)
+   plots(1) = gsn_csm_contour(wks,abs(lonFlip(var2(::-1,:)))*(-1.0),res)
 else
-   plots(1) = gsn_csm_contour(wks,var2(::-1,:)*1.0,res)
+   plots(1) = gsn_csm_contour(wks,lonFlip(var2(::-1,:))*1.0,res)
 end if
 res@tiMainString = "(c) mrd"
-plots(2) = gsn_csm_contour(wks,var3({:-60.:-1},:)*1.0,res)
+plots(2) = gsn_csm_contour(wks,var3({-60:90},:)*1.0,res)
 gsn_panel(wks,(/plots/),(/1,3/),pres)
 print("finishing plot "+var_name2(var_num))
 
@@ -409,11 +413,11 @@ sand3&lon = f3->longitude
 
 pres@txString = var_name2(22)
 res@tiMainString = "(a) reproduce"
-plots(0) = gsn_csm_contour(wks,sand1({:-60.:-1},:)*1.0,res)
+plots(0) = gsn_csm_contour(wks,sand1({-60.:90},:)*1.0,res)
 res@tiMainString = "(b) standard"
-plots(1) = gsn_csm_contour(wks,sand2(::-1,:)*1.0,res)
+plots(1) = gsn_csm_contour(wks,lonFlip(sand2(::-1,:))*1.0,res)
 res@tiMainString = "(c) mrd"
-plots(2) = gsn_csm_contour(wks,sand3({:-60.:-1},:)*1.0,res)
+plots(2) = gsn_csm_contour(wks,sand3({-60:90},:)*1.0,res)
 gsn_panel(wks,(/plots/),(/1,3/),pres)
 print("finishing plot "+var_name2(22))
 delete(sand1)
@@ -442,11 +446,11 @@ clay3&lon = f3->longitude
 
 pres@txString = var_name2(24)
 res@tiMainString = "(a) reproduce"
-plots(0) = gsn_csm_contour(wks,clay1({:-60.:-1},:)*1.0,res)
+plots(0) = gsn_csm_contour(wks,clay1({-60.:90},:)*1.0,res)
 res@tiMainString = "(b) standard"
-plots(1) = gsn_csm_contour(wks,clay2(::-1,:)*1.0,res)
+plots(1) = gsn_csm_contour(wks,lonFlip(clay2(::-1,:))*1.0,res)
 res@tiMainString = "(c) mrd"
-plots(2) = gsn_csm_contour(wks,clay3({:-60.:-1},:)*1.0,res)
+plots(2) = gsn_csm_contour(wks,clay3({-60:90},:)*1.0,res)
 gsn_panel(wks,(/plots/),(/1,3/),pres)
 print("finishing plot "+var_name2(24))
 delete(clay1)
@@ -474,11 +478,11 @@ silt3&lon = f3->longitude
 
 pres@txString = var_name2(26)
 res@tiMainString = "(a) reproduce"
-plots(0) = gsn_csm_contour(wks,silt1({:-60.:-1},:)*1.0,res)
+plots(0) = gsn_csm_contour(wks,silt1({-60.:90},:)*1.0,res)
 res@tiMainString = "(b) standard"
-plots(1) = gsn_csm_contour(wks,silt2(::-1,:)*1.0,res)
+plots(1) = gsn_csm_contour(wks,lonFlip(silt2(::-1,:))*1.0,res)
 res@tiMainString = "(c) mrd"
-plots(2) = gsn_csm_contour(wks,silt3({:-60.:-1},:)*1.0,res)
+plots(2) = gsn_csm_contour(wks,silt3({-60:90},:)*1.0,res)
 gsn_panel(wks,(/plots/),(/1,3/),pres)
 print("finishing plot "+var_name2(26))
 
@@ -519,9 +523,9 @@ var3&lon = f3->longitude
 
 pres@txString = var_name2(var_num)
 res@tiMainString = "(a) reproduce"
-plots(0) = gsn_csm_contour(wks,var1({:-60.:-1},:)*1.0,res)
+plots(0) = gsn_csm_contour(wks,var1({-60.:90},:)*1.0,res)
 res@tiMainString = "(b) mrd"
-plots(1) = gsn_csm_contour(wks,var3({:-60.:-1},:)*1.0,res)
+plots(1) = gsn_csm_contour(wks,var3({-60:90},:)*1.0,res)
 gsn_panel(wks,(/plots(0:1)/),(/1,2/),pres)
 print("finishing plot "+var_name2(var_num))
 

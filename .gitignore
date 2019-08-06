@@ -1,0 +1,9 @@
+*.pdf
+*.eps
+*.ps
+*.txt
+*.sh
+./GDAY
+./include
+*.c
+*.nc

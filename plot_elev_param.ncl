@@ -15,7 +15,7 @@ begin
 
 file_name = (/\
          "/srv/ccrc/data45/z3509830/CABLE_runs/CABLE_site_runs/CABLE_AUX-dev/offline/GSWP3_gwmodel_parameters.nc",\
-         "/srv/ccrc/data45/z3509830/CABLE_runs/CABLE_site_runs/CABLE_AUX-dev/offline/CABLE_UNSW_GSWP3_gridinfo_0.5x0.5_site.nc",\
+         "/srv/ccrc/data45/z3509830/CABLE_runs/CABLE_site_runs/CABLE_AUX-dev/offline/CABLE_UNSW_GSWP3_gridinfo_0.5x0.5.nc",\
          "/srv/ccrc/data45/z3509830/CABLE_runs/CABLE_site_runs/CABLE_AUX-dev/offline/gridinfo_CSIRO_1x1.nc"\
            /)
 
@@ -81,8 +81,8 @@ pres@lbTitlePosition      = "Bottom";Right"
 
 
 plots = new(3,graphic)
-
-pic = "converge_elev"
+casename = "MD_elev_orig_std_avg-sand_mask"
+pic = "converge_elev-"+casename
 wks = gsn_open_wks("pdf",pic)
 gsn_define_colormap(wks,"WhiteBlueGreenYellowRed")
 res@gsnDraw       = False  ; Don't draw plots;
@@ -90,7 +90,7 @@ res@gsnFrame      = False
 res@lbLabelBarOn  = True;False
 pres@lbLabelBarOn = False;True
 
-f  = addfile("gridinfo_mmy.nc","r")
+f  = addfile("gridinfo_mmy_"+casename+".nc","r")
 f2 = addfile(file_name(2),"r")
 f3 = addfile(file_name(0),"r")
 
@@ -123,9 +123,9 @@ res@cnLevels  = fspan(0.,0.22,12)
 pres@cnLevels = fspan(0.,0.22,12)
 pres@txString = "sfc-swilt"
 res@tiMainString = "(a) reproduce"
-plots(0) = gsn_csm_contour(wks,var1({:-60.:-1},:)*1.0,res)
+plots(0) = gsn_csm_contour(wks,var1({-60.:90},:)*1.0,res)
 res@tiMainString = "(b) standard"
-plots(1) = gsn_csm_contour(wks,var2(::-1,:)*1.0,res)
+plots(1) = gsn_csm_contour(wks,lonFlip(var2(::-1,:))*1.0,res)
 res@tiMainString = "(c) mrd"
 plots(2) = gsn_csm_contour(wks,var3({-60.:},:)*1.0,res)
 gsn_panel(wks,(/plots/),(/1,3/),pres)
@@ -144,10 +144,10 @@ print(var_num + " "+ var_name2(var_num))
 
 if var_num .le. 9 then
 var1   = f->$var_name2(var_num)$
-var3   = lonFlip(f3->$var_name2(var_num)$)
+var3   = f3->$var_name2(var_num)$
 else if var_num .gt. 9 then
 var1   = dim_avg_n_Wrap(f->$var_name2(var_num)$,0)
-var3   = lonFlip(dim_avg_n_Wrap(f3->$var_name2(var_num)$,0))
+var3   = dim_avg_n_Wrap(f3->$var_name2(var_num)$,0)
 end if
 end if
 
@@ -207,7 +207,7 @@ end if
 end if
 pres@txString = var_name2(var_num)
 res@tiMainString = "(a) converge"
-plots(0) = gsn_csm_contour(wks,var1({:-60.:-1},:)*1.0,res)
+plots(0) = gsn_csm_contour(wks,var1({-60.:90},:)*1.0,res)
 
 res@tiMainString = "(b) mrd"
 plots(1) = gsn_csm_contour(wks,var3({-60.:},:)*1.0,res)

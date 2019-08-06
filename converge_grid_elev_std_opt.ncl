@@ -14,6 +14,9 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/shea_util.ncl"
 ;    to replace Mark's gridinfo one
 ; 6. add another interpolation to avoid land area losing due to missing_value expantion
 ; 7. fout->landsea@units = "0:land, 1:sea"
+; 8. add using std isoil(/LAI/SnowDepth/SoilTemp, added before) as options
+
+
 ;______ From Mark Decker's code ______
 setvalues NhlGetWorkspaceObjectId()
   "wsMaximumSize" : 5000000000 ;
@@ -21,6 +24,24 @@ end setvalues
 ;_____________________________________
 
 begin
+
+;________________________________ Options ________________________________
+
+eq_opt = 0
+;  0 : using GADY's eq for "bch,sfc,ssat,sucs,swilt" + CABLE's eq for "hyds,css"
+;  1 : using Mark's set of eq, which forms his elevfile
+
+ip_opt = 1
+;  0 : using ncl bilinear interpolation function - linint2
+;  1 : put the same standard value to every gridinfo cell in the standard grid,
+;     and use landsea masks out spilting cells
+
+std_opt = 1
+;  0 : using isoil/LAI (/SnowDepth/SoilTemp,commented out) of Mark's gridinfo file
+;  1 : using isoil/LAI (/SnowDepth/SoilTemp,commented out) of standard gridinfo file
+
+
+;_______________________________ Pre-define ________________________________
 
 file_name = (/\
          "/srv/ccrc/data03/z3362708/Harmonized_Global_Soil_Data/data",\ ; lat from - to + lon from -180 to 180
@@ -51,7 +72,7 @@ gridinfo_nml = (/\
 cp_gridinfo = (/\
                 "time","x","y","rad_dummy","patch","rad","soil",\
                 "patchfrac",\ ;"longitude","latitude",
-                "iveg","isoil","soil_color","landsea","rhosoil",\ ;"cnsd",
+                "iveg","soil_color","landsea","rhosoil",\ ;,"isoil","cnsd",
                 "Albedo","albedo2",\ ; "LAI",
                 "SoilMoist","SnowDepth","SoilTemp"\;
                 /)
@@ -76,18 +97,7 @@ cp_elev = (/\
              "permeability","permeability_std"\ ;"watr"\
             /)
 
-;___________________________ Equation Option ____________________________
-
-eq_opt = 1
-;  0 : using GADY's eq for "bch,sfc,ssat,sucs,swilt" + CABLE's eq for "hyds,css"
-;  1 : using Mark's set of eq, which forms his elevfile
-
-ip_opt = 1
-; 0 : using ncl bilinear interpolation function - linint2
-; 1 : put the same standard value to every gridinfo cell in the standard grid,
-;     and use landsea masks out spilting cells
-
-; __________________________ Forming nc data ____________________________
+; ______________________________ Forming nc data ____________________________
 fcp = addfile (file_name(1),"r")
 fcp2 = addfile(file_name(2),"r")
 
@@ -97,13 +107,22 @@ else if eq_opt .eq. 1 then
   flag1 = "MD_elev"
 end if
 end if
+
 if ip_opt .eq. 0 then
   flag2 = "bilinear"
 else if ip_opt .eq. 1 then
   flag2 = "orig"
 end if
 end if
-filo = "gridinfo_mmy_"+flag1+"_"+flag2+".nc"
+
+if std_opt .eq. 0 then
+  flag3 = ""
+else if std_opt .eq. 1 then
+  flag3 = "_std"
+end if
+end if
+
+filo = "gridinfo_mmy_"+flag1+"_"+flag2+flag3+".nc"
 
 
 system("/bin/rm -f " + filo)    ; remove if exists
@@ -167,7 +186,7 @@ print("Exit DefineMode")
 ; been predefined. The "(/", "/)" syntax tells NCL to only output the
 ; data values to the predefined locations on the file.
 
-do var_num = 0,17
+do var_num = 0,16
    print("Copy gridinfo "+cp_gridinfo(var_num))
    fout->$cp_gridinfo(var_num)$ = fcp->$cp_gridinfo(var_num)$*1
 end do
@@ -199,6 +218,17 @@ if eq_opt .eq. 0 then
 
 end if
 
+if std_opt .eq. 0 then
+
+   print("Copy gridinfo LAI")
+   fout->LAI   = fcp->LAI*1
+
+   print("Copy gridinfo isoil")
+   fout->isoil = fcp->isoil*1
+
+end if
+
+
 delete(fcp)
 delete(fcp2)
 
@@ -212,6 +242,8 @@ res@cnFillOn   = True
 res@cnLinesOn  = False
 
 ; _______________________ Standard input ____________________________
+if std_opt .eq. 1 then
+
 f2 = addfile(file_name(1),"r")
 Lat = f2->latitude(::-1)
 Lon = f2->longitude
@@ -220,11 +252,13 @@ f4 = addfile(file_name(3),"r")
 Lat_std = fspan(89.5,-89.5,180)
 Lon_std = f4->longitude
 
-LAI_std = new((/12,180,360/),  float)
+LAI_std   = new((/12,180,360/),  float)
+isoil_std = new((/180,360/),  float)
 ;SD_std  = new((/12,180,360/),  float)
 ;ST_std  = new((/12,6,180,360/),float)
 
-LAI_std@_FillValue = f4->LAI@missing_value
+LAI_std@_FillValue   = f4->LAI@missing_value
+isoil_std@_FillValue = f4->isoil@missing_value
 ;SD_std@_FillValue  = f4->SnowDepth@missing_value
 ;ST_std@_FillValue  = f4->SoilTemp@missing_value
 
@@ -235,6 +269,13 @@ LAI_std!1 = "lat"
 LAI_std!2 = "lon"
 LAI_std&lat = Lat_std
 LAI_std&lon = Lon_std
+
+isoil_std(:149,:) =  f4->isoil*1
+isoil_std(150:,:) =  isoil_std@_FillValue
+isoil_std!0 = "lat"
+isoil_std!1 = "lon"
+isoil_std&lat = Lat_std
+isoil_std&lon = Lon_std
 
 ;SD_std(:,:149,:) =  f4->SnowDepth*1.0
 ;SD_std(:,150:,:) =  SD_std@_FillValue
@@ -253,23 +294,32 @@ LAI_std&lon = Lon_std
 ;ST_std&lat = Lat_std
 ;ST_std&lon = Lon_std
 
+  LAI       = new((/12,360,720/),  float)
+  isoil     = new((/360,720/),  float)
+;  SnowDepth = new((/12,360,720/),  float)
+;  SoilTemp  = new((/12,6,360,720/),float)
+
 if ip_opt .eq. 0 then
 
-  LAI = linint2(Lon_std,Lat_std(::-1),LAI_std(:,::-1,:),True,Lon,Lat,0);_Wrap
+  LAI   = linint2(Lon_std,Lat_std(::-1),LAI_std(:,::-1,:),True,Lon,Lat,0);_Wrap
+  isoil = linint2(Lon_std,Lat_std(::-1),isoil_std(::-1,:),True,Lon,Lat,0)
   ; Lat & Lon must be strictly monotonically increasing
 ;  SnowDepth = linint2(Lon_std,Lat_std(::-1),SD_std(:,::-1,:),True,Lon,Lat,0)
 ;  SoilTemp = linint2(Lon_std,Lat_std(::-1),ST_std(:,:,::-1,:),True,Lon,Lat,0)
 
-  fout->LAI = LAI(:,::-1,:)
+  fout->LAI   = LAI(:,::-1,:)
+  fout->isoil = isoil(::-1,:)
 ;  fout->SnowDepth = SnowDepth(:,::-1,:)
 ;  fout->SoilTemp  = SoilTemp(:,:,::-1,:)
 
 else if ip_opt .eq. 1 then
   LAI       = new((/12,360,720/),  float)
+  isoil     = new((/360,720/),  float)
 ;  SnowDepth = new((/12,360,720/),  float)
 ;  SoilTemp  = new((/12,6,360,720/),float)
 
   LAI@_FillValue       = f4->LAI@missing_value
+  isoil@_FillValue     = f4->isoil@missing_value
 ;  SnowDepth@_FillValue = f4->SnowDepth@missing_value
 ;  SoilTemp@_FillValue  = f4->SoilTemp@missing_value
 
@@ -279,6 +329,11 @@ else if ip_opt .eq. 1 then
         LAI(:,latt*2+1,lonn*2)   = LAI_std(:,latt,lonn)
         LAI(:,latt*2,lonn*2+1)   = LAI_std(:,latt,lonn)
         LAI(:,latt*2+1,lonn*2+1) = LAI_std(:,latt,lonn)
+
+        isoil(latt*2,lonn*2)     = isoil_std(latt,lonn)
+        isoil(latt*2+1,lonn*2)   = isoil_std(latt,lonn)
+        isoil(latt*2,lonn*2+1)   = isoil_std(latt,lonn)
+        isoil(latt*2+1,lonn*2+1) = isoil_std(latt,lonn)
 
 ;        SnowDepth(:,latt*2,lonn*2)     = SD_std(:,latt,lonn)
 ;        SnowDepth(:,latt*2+1,lonn*2)   = SD_std(:,latt,lonn)
@@ -299,23 +354,33 @@ else if ip_opt .eq. 1 then
 ;      SoilTemp(nn,mm,:,:) = where(fout->landsea .eq. 0, SoilTemp(nn,mm,:,:), SoilTemp@_FillValue)
 ;    end do
   end do
+
+  isoil = where(fout->landsea .eq. 0, isoil, isoil@_FillValue)
+ 
   fout->LAI = LAI*1.0
+  fout->isoil = isoil*1
 ;  fout->SnowDepth = SnowDepth*1.0
 ;  fout->SoilTemp  = SoilTemp*1.0
 
-end if
+end if ; ip_opt
 end if
 
+end if ; std_opt
+
 plot = gsn_csm_contour(wks,fout->LAI(0,:,:)*1.0,res)
+plot = gsn_csm_contour(wks,fout->isoil*1,res) 
+
 ;plot = gsn_csm_contour(wks,fout->SnowDepth(0,:,:)*1.0,res)
 ;plot = gsn_csm_contour(wks,fout->SoilTemp(0,0,:,:)*1.0,res)
 
 ;print(fout->LAI(0,:,:))
 delete(f4)
 delete(LAI)
+delete(isoil)
 ;delete(SnowDepth)
 ;delete(SoilTemp)
 delete(LAI_std)
+delete(isoil_std)
 ;delete(SD_std)
 ;delete(ST_std)
 delete(Lat_std)

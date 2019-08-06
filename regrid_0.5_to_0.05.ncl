@@ -17,6 +17,10 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/shea_util.ncl"
 ; 8. add using std isoil(/LAI/SnowDepth/SoilTemp, added before) as options
 ; 9. add _FillValue for the variables who don't have one
 ; 10. mask out no-land area of all 2D 3D 4D variable
+; 11. use clay/silt/sand/organic to hold the weighted mean of 0-1m soil layers.
+;     clay2/silt2/sand2/organic2 hold the 0.3-1m soil layer,
+;     and the pixels clay2+silt2+sand2 < 0.9 are replaced by clay/silt/sand.
+;     clay_vec/silt_vec/sand_vec/organic_vec = clay/silt/sand/organic.
 
 ;______ From Mark Decker's code ______
 setvalues NhlGetWorkspaceObjectId()
@@ -28,7 +32,7 @@ begin
 
 ;________________________________ Options ________________________________
 
-eq_opt = 0
+eq_opt = 1
 ;  0 : using GADY's eq for "bch,sfc,ssat,sucs,swilt" + CABLE's eq for "hyds,css"
 ;  1 : using Mark's set of eq, which forms his elevfile
 
@@ -38,7 +42,7 @@ ip_opt = 1
 ;  1 : put the same standard value to every gridinfo cell in the standard grid,
 ;     and use landsea masks out spilting cells
 
-std_opt = 0
+std_opt = 1
 ;  0 : using isoil/LAI (/SnowDepth/SoilTemp,commented out) of Mark's gridinfo file
 ;  1 : using isoil/LAI (/SnowDepth/SoilTemp,commented out) of standard gridinfo file
 
@@ -144,7 +148,7 @@ else if std_opt .eq. 1 then
 end if
 end if
 
-filo = "gridinfo_mmy_"+flag1+"_"+flag2+flag3+"_mask.nc"
+filo = "gridinfo_mmy_"+flag1+"_"+flag2+flag3+"_avg-sand_mask.nc"
 
 
 system("/bin/rm -f " + filo)    ; remove if exists
@@ -156,7 +160,12 @@ setfileoption(fout,"DefineMode",True)
 ; create global attributes of the file
 fAtt               = True            ; assign file attributes
 fAtt@title         = "converge gridinfo and elev"
-fAtt@source_file   = "CABLE_UNSW_GSWP3_gridinfo_0.5x0.5_site.nc and GSWP3_gwmodel_parameters.nc"
+if std_opt .eq. 0 then
+  fAtt@source_file   = "CABLE_UNSW_GSWP3_gridinfo_0.5x0.5_site.nc and GSWP3_gwmodel_parameters.nc"
+else if std_opt .eq. 1 then
+  fAtt@source_file   = "CABLE_UNSW_GSWP3_gridinfo_0.5x0.5_site.nc, GSWP3_gwmodel_parameters.nc, and gridinfo_CSIRO_1x1.nc (LAI,isoil)"
+end if
+end if
 fAtt@Conventions   = "None"
 fAtt@creation_date = systemfunc ("date")
 fileattdef( fout, fAtt )            ; copy file attributes
@@ -421,10 +430,18 @@ sand    = new((/360,720/),float)
 clay    = new((/360,720/),float)
 silt    = new((/360,720/),float)
 organic = new((/360,720/),float)
+sand2    = new((/360,720/),float)
+clay2    = new((/360,720/),float)
+silt2    = new((/360,720/),float)
+organic2 = new((/360,720/),float)
 sand    = 0.
 clay    = 0.
 silt    = 0.
 organic = 0.
+sand2    = 0.
+clay2    = 0.
+silt2    = 0.
+organic2 = 0.
 
 do var_num = 0,7
 
@@ -448,7 +465,7 @@ print("point 1 ")
 var3 = linint2_Wrap(lon,lat,var1,True,Lon,Lat,0)
 delete(var1)
 var3 = var3(::-1,:)
-var3!0 = "lat" ;������It doesn't need here
+var3!0 = "lat" ;It doesn't need here
 var3!1 = "lon"
 var3&lat = Lat
 var3&lon = Lon
@@ -461,47 +478,96 @@ sand@_FillValue    = var3@_FillValue
 clay@_FillValue    = var3@_FillValue
 silt@_FillValue    = var3@_FillValue
 organic@_FillValue = var3@_FillValue
+sand2@_FillValue    = var3@_FillValue
+clay2@_FillValue    = var3@_FillValue
+silt2@_FillValue    = var3@_FillValue
+organic2@_FillValue = var3@_FillValue
 print("point 3 ")
 
-if var_num .le. 1 then
-   sand = sand + var3
+if var_num .eq. 0 then
+   sand = var3
+else if var_num .eq. 1 then
+   sand2 = var3
+else if var_num .eq. 2 then
+   clay = var3
 else if var_num .le. 3 then
-   clay = clay + var3
+   clay2 = var3
+else if var_num .le. 4 then
+   silt = var3
 else if var_num .le. 5 then
-   silt = silt + var3
+   slit2 = var3
+else if var_num .le. 6 then
+   organic = var3
 else if var_num .le. 7 then
-   organic = organic + var3
+   organic2 = var3
 end if
 end if
 end if
 end if
-print("point 4 ")
-
-fout->$var_name2(var_num)$ = var3*1.0
-plot = gsn_csm_contour(wks,fout->$var_name2(var_num)$,res)
-print("point 5 ")
+end if
+end if
+end if
+end if
 delete(var3)
+print("point 4 ")
 end do
+
+; fill missing pixels
+sand2    = where((sand2+clay2+silt2) .lt. 0.9, sand, sand2)
+clay2    = where((sand2+clay2+silt2) .lt. 0.9, clay, clay2)
+silt2    = where((sand2+clay2+silt2) .lt. 0.9, silt, silt2)
+
+sand    = sand*0.3+sand2*0.7 ; 0-0.3m is top soil layer, 0.3-1.0m is lower soil layer
+clay    = clay*0.3+clay2*0.7
+silt    = silt*0.3+silt2*0.7
+organic = organic*0.3+organic2*0.7
+
+; sand/clay/silt/organic hold the weighted mean of 0-1m soil layers
+fout->sand = sand*1.0
+fout->clay = clay*1.0
+fout->silt = silt*1.0
+fout->organic = organic*1.0
+; sand2/clay2/silt2/organic2 hold the 0.3-1m soil layer
+fout->sand2 = sand2*1.0
+fout->clay2 = clay2*1.0
+fout->silt2 = silt*1.0
+fout->organic2 = organic2*1.0
+
+delete(sand2)
+delete(clay2)
+delete(silt2)
+delete(organic2)
 
 print("finishing soil texture input")
 
-sand    = sand/2.
-clay    = clay/2.
-silt    = silt/2.
-organic = organic/2.
+plot = gsn_csm_contour(wks,fout->sand,res)
+plot = gsn_csm_contour(wks,fout->clay,res)
+plot = gsn_csm_contour(wks,fout->silt,res)
+plot = gsn_csm_contour(wks,fout->organic,res)
 
-do layer = 0,2
+plot = gsn_csm_contour(wks,fout->sand2,res)
+plot = gsn_csm_contour(wks,fout->clay2,res)
+plot = gsn_csm_contour(wks,fout->silt2,res)
+plot = gsn_csm_contour(wks,fout->organic2,res)
+
+res@tiMainString = "sand+clay+silt"
+plot = gsn_csm_contour(wks,fout->sand+fout->clay+fout->silt,res)
+res@tiMainString = "sand+clay+silt+organic"
+plot = gsn_csm_contour(wks,fout->sand+fout->clay+fout->silt+fout->organic,res)
+delete(res@tiMainString)
+
+do layer = 0,5;2
 fout->sand_vec(layer,:,:)   = fout->sand*1.0
 fout->clay_vec(layer,:,:)   = fout->clay*1.0
 fout->silt_vec(layer,:,:)   = fout->silt*1.0
 fout->org_vec(layer,:,:)    = fout->organic*1.0
 end do
-do layer = 3,5
-fout->sand_vec(layer,:,:)   = fout->sand2*1.0
-fout->clay_vec(layer,:,:)   = fout->clay2*1.0
-fout->silt_vec(layer,:,:)   = fout->silt2*1.0
-fout->org_vec(layer,:,:)    = fout->organic2*1.0
-end do
+;do layer = 3,5
+;fout->sand_vec(layer,:,:)   = fout->sand2*1.0
+;fout->clay_vec(layer,:,:)   = fout->clay2*1.0
+;fout->silt_vec(layer,:,:)   = fout->silt2*1.0
+;fout->org_vec(layer,:,:)    = fout->organic2*1.0
+;end do
 
 plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->sand_vec,0),res)
 plot = gsn_csm_contour(wks, dim_avg_n_Wrap(fout->clay_vec,0),res)
@@ -644,7 +710,8 @@ if eq_opt .eq. 0 then
   print("finishing calculation")
 
 else if eq_opt .eq. 1 then
-
+; ________________________________ Mark Decker's equations for elev file ___________________________________
+; From /g/data1/w35/mrd561/CABLE2_runs/CMIP6-GM2-testing/ssgw_Feb23.2018/opt/surface_data/add_derived_SWC.py
   watr  = new((/360,720/),float)
   cnsd  = new((/360,720/),float)
 
@@ -708,6 +775,19 @@ else if eq_opt .eq. 1 then
   delete(silt)
   delete(organic)
   print("finishing calculation")
+
+; __________________ Note that ! ___________________
+; Below are the soil properties for fully organic soil in 
+; ./Marks_latest_branch_with_fixes/core/biogeophys/cable_common.F90
+; They are different from these parameters used in this script! 
+;        hyds_vec = 1.0e-4,&
+;        sucs_vec = 10.3,   &
+;        bch_vec  = 2.91,     &
+;        ssat_vec = 0.9,    &
+;        watr     = 0.1,&
+;        css_vec  = 4000.0,&
+;        cnsd_vec = 0.1
+
 
 else
 

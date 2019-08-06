@@ -21,7 +21,8 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/shea_util.ncl"
 ;     clay2/silt2/sand2/organic2 hold the 0.3-1m soil layer,
 ;     and the pixels clay2+silt2+sand2 < 0.9 are replaced by clay/silt/sand.
 ;     clay_vec/silt_vec/sand_vec/organic_vec = clay/silt/sand/organic.
-
+; 12. change the type of iveg and isoil into integer
+; 13. change soil_depth from 0-2m to (/ .011, .051, .157, .4385, 1.1855, 3.164 /)
 ;______ From Mark Decker's code ______
 setvalues NhlGetWorkspaceObjectId()
   "wsMaximumSize" : 5000000000 ;
@@ -29,6 +30,7 @@ end setvalues
 ;_____________________________________
 
 begin
+
 
 ;________________________________ Options ________________________________
 
@@ -65,9 +67,9 @@ var_name2 = (/\
              /)
 
 gridinfo_nml = (/\
-              "time",\ ;"longitude","latitude",
+              "iveg","isoil","time",\ ;"longitude","latitude",
               "x","y","rad_dummy","patch","rad","soil",\
-              "iveg","isoil","patchfrac","soil_color","landsea",\
+              "patchfrac","soil_color","landsea",\ 
               "sand","sand2","silt","silt2","clay","clay2","organic","organic2",\
               "hyds","bch","sfc","ssat","sucs","swilt","css","cnsd",\
               "rhosoil","LAI","Albedo","albedo2",\
@@ -75,9 +77,9 @@ gridinfo_nml = (/\
               /)
 
 cp_gridinfo = (/\
-                "time","x","y","rad_dummy","patch","rad","soil",\
+                "iveg","time","x","y","rad_dummy","patch","rad","soil",\
                 "patchfrac",\ ;"longitude","latitude",
-                "iveg","soil_color","landsea","rhosoil",\ ;,"isoil","cnsd",
+                "soil_color","landsea","rhosoil",\ ;"isoil","cnsd",
                 "Albedo","albedo2",\ ; "LAI",
                 "SoilMoist","SnowDepth","SoilTemp"\;
                 /)
@@ -95,7 +97,7 @@ elev_nml = (/\
            /)
 
 cp_elev = (/\
-             "soil_depth","longitude","latitude",\
+             "longitude","latitude",\ ; "soil_depth",
              "Sy","drainage_density","drainage_dist",\
              "slope","slope_std",\
              "dtb","elevation","elevation_std",\
@@ -119,7 +121,7 @@ nml_4D = (/"SoilMoist","SoilTemp"/)         ; 4D
 
 
 add_FillValue =  (/\
-            "iveg","isoil","soil_color","rhosoil","Albedo","albedo2","cnsd","watr",\
+            "soil_color","rhosoil","Albedo","albedo2","cnsd","watr",\
             "landsea","patchfrac","SnowDepth","SoilMoist","SoilTemp"\
             /)
 
@@ -190,8 +192,14 @@ filedimdef(fout,dimNames,dimSizes,dimUnlim)
 ; predefine the the dimensionality of the variables to be written out
 do var_num = 0,34
   print("Predefine " + gridinfo_nml(var_num))
-  filevardef(fout, gridinfo_nml(var_num),typeof(fcp->$gridinfo_nml(var_num)$),getvardims(fcp->$gridinfo_nml(var_num)$))
+  if var_num .le. 1 then
+    filevardef(fout, gridinfo_nml(var_num), "integer", getvardims(fcp->$gridinfo_nml(var_num)$))
+  else 
+    filevardef(fout, gridinfo_nml(var_num),typeof(fcp->$gridinfo_nml(var_num)$),getvardims(fcp->$gridinfo_nml(var_num)$))
+  end if
 end do
+;print(fout->iveg)
+
 do var_num = 0,26
   print("Predefine " + elev_nml(var_num))
   filevardef(fout, elev_nml(var_num),typeof(fcp2->$elev_nml(var_num)$), getvardims(fcp2->$elev_nml(var_num)$))
@@ -199,7 +207,10 @@ end do
 
 ; Copy attributes associated with each variable to the file
 ; All attributes associated with each variable will be copied.
-do var_num = 0,34
+
+fout->iveg@_FillValue = -1
+
+do var_num = 2,34
   print("Copy attributes " + gridinfo_nml(var_num))
   filevarattdef(fout,gridinfo_nml(var_num),fcp->$gridinfo_nml(var_num)$)
 end do
@@ -211,7 +222,7 @@ end do
 
 
 ; ____________ add FillValue _____________
-do var_num = 0,12
+do var_num = 0,10
   fout->$add_FillValue(var_num)$@_FillValue = -9999.
 end do
 
@@ -225,20 +236,24 @@ print("Exit DefineMode")
 
 do var_num = 0,16
    print("Copy gridinfo "+cp_gridinfo(var_num))
-   fout->$cp_gridinfo(var_num)$ = fcp->$cp_gridinfo(var_num)$*1
+   if var_num .eq. 0 then
+      fout->$cp_gridinfo(var_num)$ = tointeger(fcp->$cp_gridinfo(var_num)$)
+   else 
+      fout->$cp_gridinfo(var_num)$ = fcp->$cp_gridinfo(var_num)$*1
+   end if
 end do
 
 fout->landsea@units = "0:land, 1:sea"
 
-do var_num = 0,12
+do var_num = 0,11
    print("Copy elev "+cp_elev(var_num))
-   if var_num .le. 2 then
+   if var_num .le. 1 then
       fout->$cp_elev(var_num)$ = fcp2->$cp_elev(var_num)$
    else
       fout->$cp_elev(var_num)$ = lonFlip(fcp2->$cp_elev(var_num)$(::-1,:))
    end if
 end do
-
+fout->soil_depth= (/0.011,0.051,0.157,0.4385,1.1855,3.164/)
 fout->latitude  = dble2flt(fcp->latitude) ;dble2flt doubletofloat
 fout->longitude = dble2flt(fcp->longitude)
 
@@ -261,7 +276,7 @@ if std_opt .eq. 0 then
    fout->LAI   = fcp->LAI*1
 
    print("Copy gridinfo isoil")
-   fout->isoil = fcp->isoil*1
+   fout->isoil = tointeger(fcp->isoil)
 
 end if
 
@@ -332,14 +347,15 @@ isoil_std&lon = Lon_std
 ;ST_std&lon = Lon_std
 
   LAI       = new((/12,360,720/),  float)
-  isoil     = new((/360,720/),  float)
+  isoil     = new((/360,720/),  integer)
 ;  SnowDepth = new((/12,360,720/),  float)
 ;  SoilTemp  = new((/12,6,360,720/),float)
 
 if ip_opt .eq. 0 then
 
   LAI   = linint2(Lon_std,Lat_std(::-1),LAI_std(:,::-1,:),True,Lon,Lat,0);_Wrap
-  isoil = linint2(Lon_std,Lat_std(::-1),isoil_std(::-1,:),True,Lon,Lat,0)
+  isoil = tointeger(linint2(Lon_std,Lat_std(::-1),isoil_std(::-1,:),True,Lon,Lat,0))
+  isoil@_FillValue = -1
   ; Lat & Lon must be strictly monotonically increasing
 ;  SnowDepth = linint2(Lon_std,Lat_std(::-1),SD_std(:,::-1,:),True,Lon,Lat,0)
 ;  SoilTemp = linint2(Lon_std,Lat_std(::-1),ST_std(:,:,::-1,:),True,Lon,Lat,0)
@@ -351,12 +367,12 @@ if ip_opt .eq. 0 then
 
 else if ip_opt .eq. 1 then
   LAI       = new((/12,360,720/),  float)
-  isoil     = new((/360,720/),  float)
+  isoil     = new((/360,720/),  integer)
 ;  SnowDepth = new((/12,360,720/),  float)
 ;  SoilTemp  = new((/12,6,360,720/),float)
 
   LAI@_FillValue       = f4->LAI@missing_value
-  isoil@_FillValue     = f4->isoil@missing_value
+  isoil@_FillValue     = -1 ;f4->isoil@missing_value
 ;  SnowDepth@_FillValue = f4->SnowDepth@missing_value
 ;  SoilTemp@_FillValue  = f4->SoilTemp@missing_value
 
@@ -367,10 +383,10 @@ else if ip_opt .eq. 1 then
         LAI(:,latt*2,lonn*2+1)   = LAI_std(:,latt,lonn)
         LAI(:,latt*2+1,lonn*2+1) = LAI_std(:,latt,lonn)
 
-        isoil(latt*2,lonn*2)     = isoil_std(latt,lonn)
-        isoil(latt*2+1,lonn*2)   = isoil_std(latt,lonn)
-        isoil(latt*2,lonn*2+1)   = isoil_std(latt,lonn)
-        isoil(latt*2+1,lonn*2+1) = isoil_std(latt,lonn)
+        isoil(latt*2,lonn*2)     = tointeger(isoil_std(latt,lonn))
+        isoil(latt*2+1,lonn*2)   = tointeger(isoil_std(latt,lonn))
+        isoil(latt*2,lonn*2+1)   = tointeger(isoil_std(latt,lonn))
+        isoil(latt*2+1,lonn*2+1) = tointeger(isoil_std(latt,lonn))
 
 ;        SnowDepth(:,latt*2,lonn*2)     = SD_std(:,latt,lonn)
 ;        SnowDepth(:,latt*2+1,lonn*2)   = SD_std(:,latt,lonn)
@@ -395,7 +411,7 @@ else if ip_opt .eq. 1 then
   isoil = where(fout->landsea .eq. 0, isoil, isoil@_FillValue)
 
   fout->LAI = LAI*1.0
-  fout->isoil = isoil*1
+  fout->isoil = isoil
 ;  fout->SnowDepth = SnowDepth*1.0
 ;  fout->SoilTemp  = SoilTemp*1.0
 
@@ -775,6 +791,19 @@ else if eq_opt .eq. 1 then
   delete(silt)
   delete(organic)
   print("finishing calculation")
+
+; __________________ Note that ! ___________________
+; Below are the soil properties for fully organic soil in
+; ./Marks_latest_branch_with_fixes/core/biogeophys/cable_common.F90
+; They are different from these parameters used in this script!
+;        hyds_vec = 1.0e-4,&
+;        sucs_vec = 10.3,   &
+;        bch_vec  = 2.91,     &
+;        ssat_vec = 0.9,    &
+;        watr     = 0.1,&
+;        css_vec  = 4000.0,&
+;        cnsd_vec = 0.1
+
 
 else
 

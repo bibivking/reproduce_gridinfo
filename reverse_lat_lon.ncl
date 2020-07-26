@@ -60,7 +60,11 @@ print("lat")
 
 do var_num = 0,32
 print(var_num)
-   fcp->$nml_2D(var_num)$ = lonFlip(fcp->$nml_2D(var_num)$(::-1,:))*1.0
+   if var_num .le. 1 then
+      fcp->$nml_2D(var_num)$ = lonFlip(fcp->$nml_2D(var_num)$(::-1,:))
+   else
+      fcp->$nml_2D(var_num)$ = lonFlip(fcp->$nml_2D(var_num)$(::-1,:))*1.0
+   end if
    plot = gsn_csm_contour(wks,fcp->$nml_2D(var_num)$*1.,res)
 end do
 
